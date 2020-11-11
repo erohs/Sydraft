@@ -1,0 +1,20 @@
+.handle {
+  background-color: #444444;
+  cursor: move;
+}
+
+.handleleft,
+.handleright {
+  height: 100%;
+  width: 8px;
+}
+
+.handletop,
+.handlebottom {
+  height: 8px;
+  width: 100%;
+}
+
+.handle.react-draggable-dragging {
+  cursor: grabbing;
+}

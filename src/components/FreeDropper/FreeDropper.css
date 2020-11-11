@@ -1,0 +1,8 @@
+.free-dropper {
+  width: 100%;
+  height: 100%;
+}
+
+.free-dropper.dragover {
+  background: rgba(0, 0, 0, 0.5);
+}

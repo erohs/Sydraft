@@ -1,0 +1,32 @@
+.draggable-image {
+  position: fixed;
+}
+
+.draggable-image__resizable {
+  position: fixed !important; /* Need to use important, otherwise don't get placed in the correct position */
+  box-sizing: border-box;
+}
+
+.dragable-image__container {
+  position: fixed;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.draggable-image.react-draggable-dragging,
+.dragable-image__container.react-draggable-dragging {
+  cursor: grabbing;
+}
+
+.custom-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #1153aa;
+  opacity: 0.75;
+  border-radius: 4px;
+}
