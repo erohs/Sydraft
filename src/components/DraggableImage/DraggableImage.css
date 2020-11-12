@@ -8,25 +8,23 @@
 }
 
 .dragable-image__container {
-  position: fixed;
+  position: relative;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.5);
   cursor: grab;
   display: flex;
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: 0;
   align-items: center;
   justify-content: center;
+}
+
+.dragable-image__container:focus {
+  outline: solid 1px #eeeeee;
 }
 
 .draggable-image.react-draggable-dragging,
 .dragable-image__container.react-draggable-dragging {
   cursor: grabbing;
-}
-
-.custom-handle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background-color: #1153aa;
-  opacity: 0.75;
-  border-radius: 4px;
 }

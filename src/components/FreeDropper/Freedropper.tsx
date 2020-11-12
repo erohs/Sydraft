@@ -1,25 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { IImage } from "../../types";
 import DraggableImage from "../DraggableImage/DraggableImage";
 import "./FreeDropper.css";
-
-interface ICoords {
-  x: number;
-  y: number;
-}
-
-interface ISize {
-  width: number;
-  height: number;
-}
-
-interface IImage {
-  src: string;
-  initDivPos: ICoords;
-  initImgPos: ICoords;
-  initDivSize: ISize;
-  initImgSize: ISize;
-  zindex: number;
-}
 
 const FreeDropper: React.FC = () => {
   const [images, updateImages] = useState<IImage[]>([]);
@@ -79,11 +61,10 @@ const FreeDropper: React.FC = () => {
         const position = { x: e.clientX - size.width / 2, y: e.clientY - size.height / 2 };
         const image: IImage = {
           src: src as string,
-          initDivPos: position,
-          initImgPos: { x: 0, y: 0 },
-          initDivSize: size,
-          initImgSize: size,
-          zindex: images.length,
+          divPosition: position,
+          imgPosition: { x: 0, y: 0 },
+          divSize: size,
+          imgSize: size,
         };
         updateImages([...images, image]);
       };
@@ -97,23 +78,27 @@ const FreeDropper: React.FC = () => {
     e.currentTarget.classList.remove("dragover");
   };
 
-  const reorder = (index: number) => {
-    let removedImages = [...images];
-    removedImages.splice(index, 1);
-    const sortedImages = removedImages.sort(function (a, b) {
-      return a.zindex === b.zindex ? 0 : +(a.zindex > b.zindex) || -1;
-    });
+  const reorderImages = (index: number) => {
     let newImages = [...images];
-    newImages.forEach(function (image) {
-      var index = sortedImages.findIndex((x) => x === image);
-      if (index === -1) {
-        image.zindex = newImages.length - 1;
-        return;
-      }
-      image.zindex = index;
-    });
+    const tempImage: IImage = newImages[index];
+    newImages.splice(index, 1);
+    newImages.push(tempImage);
     updateImages(newImages);
   };
+
+  const updateImage = (index: number, image: IImage) => {
+    let newImages = [...images];
+    newImages[index] = image;
+    updateImages(newImages);
+  };
+
+  const deleteImage = (index: number) => {
+    let newImages = [...images];
+    newImages.splice(index, 1);
+    updateImages(newImages);
+  };
+
+  useEffect(() => {}, [images]);
 
   return (
     <div
@@ -124,15 +109,12 @@ const FreeDropper: React.FC = () => {
     >
       {images.map((image, index) => (
         <DraggableImage
-          src={image.src}
-          initDivPos={image.initDivPos}
-          initImgPos={image.initImgPos}
-          initDivSize={image.initDivSize}
-          initImgSize={image.initImgSize}
+          image={image}
           key={index}
           index={index}
-          zindex={image.zindex}
-          reorder={reorder}
+          reorderImages={reorderImages}
+          updateImage={updateImage}
+          deleteImage={deleteImage}
         />
       ))}
     </div>
