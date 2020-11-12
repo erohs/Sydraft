@@ -7,10 +7,10 @@ const FreeDropper: React.FC = () => {
   const [images, updateImages] = useState<IImage[]>([]);
 
   const retrieveData = (dT: DataTransfer) => {
-    // var files = getFiles(dT);
-    // if (files.length) {
-    //   return files;
-    // }
+    const files = getFiles(dT);
+    if (files.length) {
+      return files;
+    }
 
     const elems = getHTMLMarkup(dT);
     if (elems && elems.length) {
@@ -42,6 +42,26 @@ const FreeDropper: React.FC = () => {
       const imgs = (doc && doc.querySelectorAll("img,image")) || [];
       return Array.prototype.map.call(imgs, getImgSrc);
     }
+  };
+
+  const getFiles = (dT: DataTransfer) => {
+    let srcs = [];
+    let imgObj;
+
+    if (dT.files && dT.files.length) {
+      for (var i = 0; i < dT.files.length; i++) {
+        if (dT.files[i].type.indexOf("image/") === 0) {
+          imgObj = {
+            type: "file",
+            element: new Image(),
+            file: dT.files[i],
+          };
+          const src = URL.createObjectURL(imgObj.file);
+          srcs.push(src);
+        }
+      }
+    }
+    return srcs;
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
