@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { IImage } from "../../types";
 import DraggableImage from "../DraggableImage/DraggableImage";
 import "./FreeDropper.css";
@@ -117,8 +117,6 @@ const FreeDropper: React.FC = () => {
     newImages.splice(index, 1);
     updateImages(newImages);
   };
-
-  useEffect(() => {}, [images]);
 
   return (
     <div
