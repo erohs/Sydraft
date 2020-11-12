@@ -2,9 +2,22 @@ import React, { useState } from "react";
 import DraggableImage from "../DraggableImage/DraggableImage";
 import "./FreeDropper.css";
 
+interface ICoords {
+  x: number;
+  y: number;
+}
+
+interface ISize {
+  width: number;
+  height: number;
+}
+
 interface IImage {
   src: string;
-  position: { x: number; y: number };
+  initDivPos: ICoords;
+  initImgPos: ICoords;
+  initDivSize: ISize;
+  initImgSize: ISize;
   zindex: number;
 }
 
@@ -17,7 +30,7 @@ const FreeDropper: React.FC = () => {
     //   return files;
     // }
 
-    var elems = getHTMLMarkup(dT);
+    const elems = getHTMLMarkup(dT);
     if (elems && elems.length) {
       return elems;
     }
@@ -25,29 +38,29 @@ const FreeDropper: React.FC = () => {
     console.warn("unable to retrieve any image in dropped data");
   };
 
-  function getHTMLMarkup(dT: DataTransfer) {
-    var markup = dT.getData("text/html");
+  const getImgSrc = (element: Element) => {
+    var src: string | null;
+    if (element instanceof SVGImageElement) {
+      src =
+        element.getAttributeNS("http://www.w3.org/1999/xlink", "href") ||
+        element.getAttribute("href");
+    } else {
+      const img: HTMLImageElement = document.adoptNode(element) as HTMLImageElement;
+      src = img.src;
+    }
+
+    return src;
+  };
+
+  const getHTMLMarkup = (dT: DataTransfer) => {
+    const markup = dT.getData("text/html");
+
     if (markup) {
-      var doc = new DOMParser().parseFromString(markup, "text/html");
-      var imgs = (doc && doc.querySelectorAll("img,image")) || [];
-      return Array.prototype.map.call(imgs, toImagesrc);
+      const doc = new DOMParser().parseFromString(markup, "text/html");
+      const imgs = (doc && doc.querySelectorAll("img,image")) || [];
+      return Array.prototype.map.call(imgs, getImgSrc);
     }
-
-    function toImagesrc(element: Element) {
-      console.log(element);
-      var src: string | null;
-      if (element instanceof SVGImageElement) {
-        src =
-          element.getAttributeNS("http://www.w3.org/1999/xlink", "href") ||
-          element.getAttribute("href");
-      } else {
-        const img: HTMLImageElement = document.adoptNode(element) as HTMLImageElement;
-        src = img.src;
-      }
-
-      return src;
-    }
-  }
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -57,15 +70,25 @@ const FreeDropper: React.FC = () => {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.currentTarget.classList.remove("dragover");
-    var srcs = retrieveData(e.dataTransfer);
+    let srcs = retrieveData(e.dataTransfer);
     srcs?.forEach((src) => {
-      var rect = e.currentTarget.getBoundingClientRect();
-      var x = e.clientX - rect.left;
-      var y = e.clientY - rect.top;
-      updateImages([
-        ...images,
-        { src: src as string, position: { x: x, y: y }, zindex: images.length },
-      ]);
+      let img = new Image();
+
+      img.onload = function () {
+        const size = { width: img.naturalWidth, height: img.naturalHeight };
+        const position = { x: e.clientX - size.width / 2, y: e.clientY - size.height / 2 };
+        const image: IImage = {
+          src: src as string,
+          initDivPos: position,
+          initImgPos: { x: 0, y: 0 },
+          initDivSize: size,
+          initImgSize: size,
+          zindex: images.length,
+        };
+        updateImages([...images, image]);
+      };
+
+      img.src = src as string;
     });
   };
 
@@ -80,16 +103,16 @@ const FreeDropper: React.FC = () => {
     const sortedImages = removedImages.sort(function (a, b) {
       return a.zindex === b.zindex ? 0 : +(a.zindex > b.zindex) || -1;
     });
-    let oldImages = [...images];
-    oldImages.forEach(function (image) {
+    let newImages = [...images];
+    newImages.forEach(function (image) {
       var index = sortedImages.findIndex((x) => x === image);
       if (index === -1) {
-        image.zindex = oldImages.length - 1;
+        image.zindex = newImages.length - 1;
         return;
       }
       image.zindex = index;
     });
-    updateImages(oldImages);
+    updateImages(newImages);
   };
 
   return (
@@ -102,7 +125,10 @@ const FreeDropper: React.FC = () => {
       {images.map((image, index) => (
         <DraggableImage
           src={image.src}
-          position={image.position}
+          initDivPos={image.initDivPos}
+          initImgPos={image.initImgPos}
+          initDivSize={image.initDivSize}
+          initImgSize={image.initImgSize}
           key={index}
           index={index}
           zindex={image.zindex}
