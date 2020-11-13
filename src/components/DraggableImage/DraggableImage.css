@@ -17,16 +17,11 @@
   justify-content: center;
 }
 
+.dragable-image__container:focus {
+  outline: solid 1px #eeeeee;
+}
+
 .draggable-image.react-draggable-dragging,
 .dragable-image__container.react-draggable-dragging {
   cursor: grabbing;
-}
-
-.custom-handle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background-color: #1153aa;
-  opacity: 0.75;
-  border-radius: 4px;
 }

@@ -1,101 +1,86 @@
-import React, { useState, useEffect } from "react";
-import "./DraggableImage.css";
+import React, { useState } from "react";
+import { IDraggableImageProps } from "./interfaces/IDraggableImageProps";
 import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
 import { Resizable } from "react-resizable";
+import "./DraggableImage.css";
 import "react-resizable/css/styles.css";
 
-interface IDraggableImageProps {
-  src: string;
-  position: {
-    x: number;
-    y: number;
-  };
-  className?: string;
-  index: number;
-  zindex: number;
-  reorder: (index: number) => void;
-}
-
 const DraggableImage: React.FC<IDraggableImageProps> = ({
-  src,
-  position,
-  className,
+  image,
   index,
-  zindex,
-  reorder,
+  className,
+  reorderImages,
+  updateImage,
+  deleteImage,
 }) => {
-  const [pos, setPos] = useState(position);
-  const [divHeight, setDivHeight] = useState(0);
-  const [divWidth, setDivWidth] = useState(0);
-  const [imgHeight, setImgHeight] = useState(0);
-  const [imgWidth, setImgWidth] = useState(0);
   const [canDrag, setCanDrag] = useState(true);
 
-  const onStop = (event: DraggableEvent, data: DraggableData) => {
-    setPos({ x: data.x, y: data.y });
+  const onDivStop = (event: DraggableEvent, data: DraggableData) => {
+    image.divPosition = { x: data.x, y: data.y };
+    updateImage(index, image);
+  };
+
+  const onImgStop = (event: DraggableEvent, data: DraggableData) => {
+    if (canDrag) {
+      image.imgPosition = { x: data.x, y: data.y };
+      updateImage(index, image);
+    }
   };
 
   const onDoubleClick = () => {
-    reorder(index);
+    reorderImages(index);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Delete") {
+      deleteImage(index);
+    }
   };
 
   const onWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     if (event.deltaY < 0) {
-      const newWidth = imgWidth * 1.1;
-      const newHeight = imgHeight * 1.1;
-      setImgWidth(newWidth);
-      setImgHeight(newHeight);
+      image.imgSize = { width: image.imgSize.width * 1.1, height: image.imgSize.height * 1.1 };
+      updateImage(index, image);
     } else {
-      const newWidth = imgWidth * 0.9;
-      const newHeight = imgHeight * 0.9;
-      setImgWidth(newWidth);
-      setImgHeight(newHeight);
+      image.imgSize = { width: image.imgSize.width * 0.9, height: image.imgSize.height * 0.9 };
+      updateImage(index, image);
     }
   };
-
-  useEffect(() => {
-    let img = new Image();
-
-    img.onload = function () {
-      var height = img.naturalHeight;
-      var width = img.naturalWidth;
-      setDivHeight(height);
-      setDivWidth(width);
-      setImgHeight(height);
-      setImgWidth(width);
-    };
-
-    img.src = src;
-  }, []);
 
   const classname = `draggable-image ${className}`;
 
   return (
     <Draggable
-      position={pos}
-      onStop={(event, data) => onStop(event, data)}
+      position={image.divPosition}
+      onStop={(event, data) => onDivStop(event, data)}
       cancel={".react-resizable-handle"}
     >
       <Resizable
-        onResize={(e, data) => {
-          setDivWidth(data.size.width);
-          setDivHeight(data.size.height);
+        onResize={(event, data) => {
+          image.divSize = { width: data.size.width, height: data.size.height };
+          updateImage(index, image);
         }}
-        width={divWidth}
-        height={divHeight}
+        width={image.divSize.width}
+        height={image.divSize.height}
         className="draggable-image__resizable"
       >
         <div
           className="dragable-image__container"
-          style={{ width: divWidth + "px", height: divHeight + "px", zIndex: zindex }}
+          tabIndex={0}
+          style={{
+            width: `${image.divSize.width}px`,
+            height: `${image.divSize.height}px`,
+          }}
           onDoubleClick={() => onDoubleClick()}
           onWheel={(event) => onWheel(event)}
+          onKeyDown={(event) => onKeyDown(event)}
           onContextMenu={(event) => {
             event.preventDefault();
             return false;
           }}
         >
           <Draggable
+            position={image.imgPosition}
             allowAnyClick={true}
             onMouseDown={(event) => {
               setCanDrag(event.button === 2);
@@ -105,13 +90,15 @@ const DraggableImage: React.FC<IDraggableImageProps> = ({
                 return false;
               }
             }}
+            onStop={(event, data) => onImgStop(event, data)}
           >
             <img
               draggable="false"
               className={classname}
-              src={src}
-              width={imgWidth}
-              height={imgHeight}
+              src={image.src}
+              width={image.imgSize.width}
+              height={image.imgSize.height}
+              alt=""
             />
           </Draggable>
         </div>

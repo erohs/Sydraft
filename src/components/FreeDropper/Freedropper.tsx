@@ -1,23 +1,18 @@
 import React, { useState } from "react";
+import { IImage } from "../../types";
 import DraggableImage from "../DraggableImage/DraggableImage";
 import "./FreeDropper.css";
-
-interface IImage {
-  src: string;
-  position: { x: number; y: number };
-  zindex: number;
-}
 
 const FreeDropper: React.FC = () => {
   const [images, updateImages] = useState<IImage[]>([]);
 
   const retrieveData = (dT: DataTransfer) => {
-    // var files = getFiles(dT);
-    // if (files.length) {
-    //   return files;
-    // }
+    const files = getFiles(dT);
+    if (files.length) {
+      return files;
+    }
 
-    var elems = getHTMLMarkup(dT);
+    const elems = getHTMLMarkup(dT);
     if (elems && elems.length) {
       return elems;
     }
@@ -25,29 +20,49 @@ const FreeDropper: React.FC = () => {
     console.warn("unable to retrieve any image in dropped data");
   };
 
-  function getHTMLMarkup(dT: DataTransfer) {
-    var markup = dT.getData("text/html");
+  const getImgSrc = (element: Element) => {
+    var src: string | null;
+    if (element instanceof SVGImageElement) {
+      src =
+        element.getAttributeNS("http://www.w3.org/1999/xlink", "href") ||
+        element.getAttribute("href");
+    } else {
+      const img: HTMLImageElement = document.adoptNode(element) as HTMLImageElement;
+      src = img.src;
+    }
+
+    return src;
+  };
+
+  const getHTMLMarkup = (dT: DataTransfer) => {
+    const markup = dT.getData("text/html");
+
     if (markup) {
-      var doc = new DOMParser().parseFromString(markup, "text/html");
-      var imgs = (doc && doc.querySelectorAll("img,image")) || [];
-      return Array.prototype.map.call(imgs, toImagesrc);
+      const doc = new DOMParser().parseFromString(markup, "text/html");
+      const imgs = (doc && doc.querySelectorAll("img,image")) || [];
+      return Array.prototype.map.call(imgs, getImgSrc);
     }
+  };
 
-    function toImagesrc(element: Element) {
-      console.log(element);
-      var src: string | null;
-      if (element instanceof SVGImageElement) {
-        src =
-          element.getAttributeNS("http://www.w3.org/1999/xlink", "href") ||
-          element.getAttribute("href");
-      } else {
-        const img: HTMLImageElement = document.adoptNode(element) as HTMLImageElement;
-        src = img.src;
+  const getFiles = (dT: DataTransfer) => {
+    let srcs = [];
+    let imgObj;
+
+    if (dT.files && dT.files.length) {
+      for (var i = 0; i < dT.files.length; i++) {
+        if (dT.files[i].type.indexOf("image/") === 0) {
+          imgObj = {
+            type: "file",
+            element: new Image(),
+            file: dT.files[i],
+          };
+          const src = URL.createObjectURL(imgObj.file);
+          srcs.push(src);
+        }
       }
-
-      return src;
     }
-  }
+    return srcs;
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -57,15 +72,24 @@ const FreeDropper: React.FC = () => {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.currentTarget.classList.remove("dragover");
-    var srcs = retrieveData(e.dataTransfer);
+    let srcs = retrieveData(e.dataTransfer);
     srcs?.forEach((src) => {
-      var rect = e.currentTarget.getBoundingClientRect();
-      var x = e.clientX - rect.left;
-      var y = e.clientY - rect.top;
-      updateImages([
-        ...images,
-        { src: src as string, position: { x: x, y: y }, zindex: images.length },
-      ]);
+      let img = new Image();
+
+      img.onload = function () {
+        const size = { width: img.naturalWidth, height: img.naturalHeight };
+        const position = { x: e.clientX - size.width / 2, y: e.clientY - size.height / 2 };
+        const image: IImage = {
+          src: src as string,
+          divPosition: position,
+          imgPosition: { x: 0, y: 0 },
+          divSize: size,
+          imgSize: size,
+        };
+        updateImages([...images, image]);
+      };
+
+      img.src = src as string;
     });
   };
 
@@ -74,22 +98,24 @@ const FreeDropper: React.FC = () => {
     e.currentTarget.classList.remove("dragover");
   };
 
-  const reorder = (index: number) => {
-    let removedImages = [...images];
-    removedImages.splice(index, 1);
-    const sortedImages = removedImages.sort(function (a, b) {
-      return a.zindex === b.zindex ? 0 : +(a.zindex > b.zindex) || -1;
-    });
-    let oldImages = [...images];
-    oldImages.forEach(function (image) {
-      var index = sortedImages.findIndex((x) => x === image);
-      if (index === -1) {
-        image.zindex = oldImages.length - 1;
-        return;
-      }
-      image.zindex = index;
-    });
-    updateImages(oldImages);
+  const reorderImages = (index: number) => {
+    let newImages = [...images];
+    const tempImage: IImage = newImages[index];
+    newImages.splice(index, 1);
+    newImages.push(tempImage);
+    updateImages(newImages);
+  };
+
+  const updateImage = (index: number, image: IImage) => {
+    let newImages = [...images];
+    newImages[index] = image;
+    updateImages(newImages);
+  };
+
+  const deleteImage = (index: number) => {
+    let newImages = [...images];
+    newImages.splice(index, 1);
+    updateImages(newImages);
   };
 
   return (
@@ -101,12 +127,12 @@ const FreeDropper: React.FC = () => {
     >
       {images.map((image, index) => (
         <DraggableImage
-          src={image.src}
-          position={image.position}
+          image={image}
           key={index}
           index={index}
-          zindex={image.zindex}
-          reorder={reorder}
+          reorderImages={reorderImages}
+          updateImage={updateImage}
+          deleteImage={deleteImage}
         />
       ))}
     </div>

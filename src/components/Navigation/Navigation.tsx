@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
 import "./Navigation.css";
@@ -51,6 +51,30 @@ const Navigation = () => {
 
     setSide(nearestSide);
     setPosition(position[nearestSide]);
+  };
+
+  useEffect(() => {
+    window.addEventListener("resize", onResize, false);
+
+    return () => {
+      window.removeEventListener("resize", onResize, false);
+    };
+  });
+
+  const onResize = () => {
+    const documentElement = document.documentElement;
+    const wrapperHeight = window.innerHeight || documentElement.clientHeight;
+    const wrapperWidth = window.innerWidth || documentElement.clientWidth;
+
+    const position: IPosition = {
+      top: { y: 0, x: 0 },
+      left: { y: 0, x: 0 },
+      bottom: { y: wrapperHeight - 58, x: 0 },
+      right: { y: 0, x: wrapperWidth - 58 },
+    };
+
+    const nearestSide = position[side];
+    setPosition(nearestSide);
   };
 
   const wrapperClasses = `navigation__wrapper wrapper${side}`;
