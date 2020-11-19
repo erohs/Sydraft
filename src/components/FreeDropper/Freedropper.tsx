@@ -1,18 +1,22 @@
-import React, { useState } from "react";
-import { IImage } from "../../types";
+import React from "react";
 import DraggableImage from "../DraggableImage/DraggableImage";
+import { IFreeDropperProps } from "./interfaces/IFreeDropperProps";
+import { IFreeDropperState } from "./interfaces/IFreeDropperState";
+import { IImage } from "../../types";
 import "./FreeDropper.css";
 
-const FreeDropper: React.FC = () => {
-  const [images, updateImages] = useState<IImage[]>([]);
+class FreeDropper extends React.Component<IFreeDropperProps> {
+  state: IFreeDropperState = {
+    images: [],
+  };
 
-  const retrieveData = (dT: DataTransfer) => {
-    const files = getFiles(dT);
+  retrieveData = (dT: DataTransfer) => {
+    const files = this.getFiles(dT);
     if (files.length) {
       return files;
     }
 
-    const elems = getHTMLMarkup(dT);
+    const elems = this.getHTMLMarkup(dT);
     if (elems && elems.length) {
       return elems;
     }
@@ -20,7 +24,7 @@ const FreeDropper: React.FC = () => {
     console.warn("unable to retrieve any image in dropped data");
   };
 
-  const getImgSrc = (element: Element) => {
+  getImgSrc = (element: Element) => {
     var src: string | null;
     if (element instanceof SVGImageElement) {
       src =
@@ -34,17 +38,17 @@ const FreeDropper: React.FC = () => {
     return src;
   };
 
-  const getHTMLMarkup = (dT: DataTransfer) => {
+  getHTMLMarkup = (dT: DataTransfer) => {
     const markup = dT.getData("text/html");
 
     if (markup) {
       const doc = new DOMParser().parseFromString(markup, "text/html");
       const imgs = (doc && doc.querySelectorAll("img,image")) || [];
-      return Array.prototype.map.call(imgs, getImgSrc);
+      return Array.prototype.map.call(imgs, this.getImgSrc);
     }
   };
 
-  const getFiles = (dT: DataTransfer) => {
+  getFiles = (dT: DataTransfer) => {
     let srcs = [];
     let imgObj;
 
@@ -64,21 +68,25 @@ const FreeDropper: React.FC = () => {
     return srcs;
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.currentTarget.classList.add("dragover");
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.currentTarget.classList.remove("dragover");
-    let srcs = retrieveData(e.dataTransfer);
+    let srcs = this.retrieveData(e.dataTransfer);
     srcs?.forEach((src) => {
       let img = new Image();
+      const rect = e.currentTarget.getBoundingClientRect();
 
-      img.onload = function () {
+      img.onload = () => {
         const size = { width: img.naturalWidth, height: img.naturalHeight };
-        const position = { x: e.clientX - size.width / 2, y: e.clientY - size.height / 2 };
+        const position = {
+          x: (e.clientX - rect.left) / this.props.zoom - size.width / 2,
+          y: (e.clientY - rect.top) / this.props.zoom - size.height / 2,
+        };
         const image: IImage = {
           src: src as string,
           divPosition: position,
@@ -86,57 +94,62 @@ const FreeDropper: React.FC = () => {
           divSize: size,
           imgSize: size,
         };
-        updateImages([...images, image]);
+
+        this.setState({ images: [...this.state.images, image] });
       };
 
       img.src = src as string;
     });
   };
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+  handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.currentTarget.classList.remove("dragover");
   };
 
-  const reorderImages = (index: number) => {
-    let newImages = [...images];
-    const tempImage: IImage = newImages[index];
-    newImages.splice(index, 1);
-    newImages.push(tempImage);
-    updateImages(newImages);
+  reorderImages = (index: number) => {
+    let images = [...this.state.images];
+    const tempImage: IImage = images[index];
+    images.splice(index, 1);
+    images.push(tempImage);
+    this.setState({ images });
   };
 
-  const updateImage = (index: number, image: IImage) => {
-    let newImages = [...images];
-    newImages[index] = image;
-    updateImages(newImages);
+  updateImage = (index: number, image: IImage) => {
+    let images = [...this.state.images];
+    images[index] = image;
+    this.setState({ images });
   };
 
-  const deleteImage = (index: number) => {
-    let newImages = [...images];
-    newImages.splice(index, 1);
-    updateImages(newImages);
+  deleteImage = (index: number) => {
+    let images = [...this.state.images];
+    images.splice(index, 1);
+    this.setState({ images });
   };
 
-  return (
-    <div
-      className="free-dropper"
-      onDragOver={(e) => handleDragOver(e)}
-      onDrop={(e) => handleDrop(e)}
-      onDragLeave={(e) => handleDragLeave(e)}
-    >
-      {images.map((image, index) => (
-        <DraggableImage
-          image={image}
-          key={index}
-          index={index}
-          reorderImages={reorderImages}
-          updateImage={updateImage}
-          deleteImage={deleteImage}
-        />
-      ))}
-    </div>
-  );
-};
+  render() {
+    return (
+      <div
+        className="free-dropper"
+        onDragOver={(e) => this.handleDragOver(e)}
+        onDrop={(e) => this.handleDrop(e)}
+        onDragLeave={(e) => this.handleDragLeave(e)}
+      >
+        {this.state.images.map((image, index) => (
+          <DraggableImage
+            image={image}
+            key={index}
+            index={index}
+            reorderImages={this.reorderImages}
+            updateImage={this.updateImage}
+            deleteImage={this.deleteImage}
+            disable={this.props.disable}
+            zoom={this.props.zoom}
+          />
+        ))}
+      </div>
+    );
+  }
+}
 
 export default FreeDropper;

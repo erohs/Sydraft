@@ -1,9 +1,19 @@
 import React from "react";
+import { IHandleProps } from "./interfaces/IHandleProps";
 import "./Handle.css";
 
-const Handle: React.FC<{ id: string; side: string }> = ({ id, side }) => {
-  const handleClasses = `handle handle${side}`;
-  return <div id={id} className={handleClasses} />;
-};
+class Handle extends React.Component<IHandleProps> {
+  render() {
+    const handleClasses = `handle handle${this.props.side}`;
+    return (
+      <div
+        id={this.props.id}
+        className={handleClasses}
+        draggable={false}
+        onMouseDown={this.props.handleMouseDown}
+      />
+    );
+  }
+}
 
 export default Handle;

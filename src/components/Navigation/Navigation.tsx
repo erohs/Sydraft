@@ -1,14 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
-import "./Navigation.css";
+import React from "react";
 import Logo from "../Logo/Logo";
 import Handle from "../Handle/Handle";
-
-interface ICoords {
-  y: number;
-  x: number;
-}
+import { Link } from "react-router-dom";
+import { ICoords } from "../../types";
+import "./Navigation.css";
 
 interface IMargin {
   [key: string]: number;
@@ -18,25 +13,64 @@ interface IPosition {
   [key: string]: ICoords;
 }
 
-const Navigation = () => {
-  const [position, setPosition] = useState({ y: 0, x: 0 });
-  const [side, setSide] = useState("left");
+interface INavigationState {
+  position: ICoords;
+  offset: ICoords;
+  side: string;
+}
 
-  const onStop = (event: DraggableEvent, data: DraggableData) => {
+class Navigation extends React.Component {
+  state: INavigationState = {
+    position: { x: 0, y: 0 },
+    offset: { x: 0, y: 0 },
+    side: "left",
+  };
+
+  componentDidMount() {
+    window.addEventListener("resize", this.handleResize, false);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.handleResize, false);
+  }
+
+  handleMouseDown = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    this.setState({
+      offset: {
+        x: event.pageX - this.state.position.x,
+        y: event.pageY - this.state.position.y,
+      },
+    });
+
+    window.addEventListener("mousemove", this.handleMouseMove, true);
+    window.addEventListener("mouseup", this.handleMouseUp, false);
+  };
+
+  handleMouseMove = (event: MouseEvent) => {
+    const x = event.pageX - this.state.offset.x;
+    const y = event.pageY - this.state.offset.y;
+
+    this.setState({
+      position: {
+        x: x,
+        y: y,
+      },
+    });
+  };
+
+  handleMouseUp = (event: MouseEvent) => {
+    window.removeEventListener("mousemove", this.handleMouseMove, true);
+    window.removeEventListener("mouseup", this.handleMouseUp, false);
+
     const documentElement = document.documentElement;
     const wrapperHeight = window.innerHeight || documentElement.clientHeight;
     const wrapperWidth = window.innerWidth || documentElement.clientWidth;
 
-    const center = {
-      x: data.x + data.node.clientWidth / 2,
-      y: data.y + data.node.clientHeight / 2,
-    };
-
     const margin: IMargin = {
-      top: center.y - 0,
-      left: center.x - 0,
-      bottom: wrapperHeight - center.y,
-      right: wrapperWidth - center.x,
+      top: event.pageY - 0,
+      left: event.pageX - 0,
+      bottom: wrapperHeight - event.pageY,
+      right: wrapperWidth - event.pageX,
     };
 
     const position: IPosition = {
@@ -49,19 +83,10 @@ const Navigation = () => {
     const sorted = Object.keys(margin).sort((a, b) => margin[a] - margin[b]);
     const nearestSide: string = sorted[0];
 
-    setSide(nearestSide);
-    setPosition(position[nearestSide]);
+    this.setState({ side: nearestSide, position: position[nearestSide] });
   };
 
-  useEffect(() => {
-    window.addEventListener("resize", onResize, false);
-
-    return () => {
-      window.removeEventListener("resize", onResize, false);
-    };
-  });
-
-  const onResize = () => {
+  handleResize = () => {
     const documentElement = document.documentElement;
     const wrapperHeight = window.innerHeight || documentElement.clientHeight;
     const wrapperWidth = window.innerWidth || documentElement.clientWidth;
@@ -73,22 +98,24 @@ const Navigation = () => {
       right: { y: 0, x: wrapperWidth - 58 },
     };
 
-    const nearestSide = position[side];
-    setPosition(nearestSide);
+    const nearestSide = position[this.state.side];
+    this.setState({ side: nearestSide });
   };
 
-  const wrapperClasses = `navigation__wrapper wrapper${side}`;
-  const navClasses = `navigation nav${side}`;
-  const mainClasses = `navigation__main main${side}`;
-
-  return (
-    <Draggable
-      handle="#navigation__handle"
-      position={position}
-      onStop={(event, data) => onStop(event, data)}
-    >
-      <div className={wrapperClasses}>
-        <Handle id="navigation__handle" side={side} />
+  render() {
+    const wrapperClasses = `navigation__wrapper wrapper${this.state.side}`;
+    const navClasses = `navigation nav${this.state.side}`;
+    const mainClasses = `navigation__main main${this.state.side}`;
+    const style = {
+      transform: `translate(${this.state.position.x}px, ${this.state.position.y}px)`,
+    };
+    return (
+      <div className={wrapperClasses} style={style} draggable={false}>
+        <Handle
+          id="navigation__handle"
+          side={this.state.side}
+          handleMouseDown={this.handleMouseDown}
+        />
         <div className={navClasses}>
           <Logo size={30} />
           <div className={mainClasses}>
@@ -116,8 +143,8 @@ const Navigation = () => {
           </div>
         </div>
       </div>
-    </Draggable>
-  );
-};
+    );
+  }
+}
 
 export default Navigation;

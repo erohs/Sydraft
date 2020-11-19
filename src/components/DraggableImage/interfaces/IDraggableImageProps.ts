@@ -7,4 +7,6 @@ export interface IDraggableImageProps {
   reorderImages: (index: number) => void;
   updateImage: (index: number, image: IImage) => void;
   deleteImage: (index: number) => void;
+  disable: boolean;
+  zoom: number;
 }

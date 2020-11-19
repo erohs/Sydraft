@@ -1,5 +1,6 @@
 .draggable-image {
   position: fixed;
+  user-select: none;
 }
 
 .draggable-image__resizable {
@@ -7,7 +8,7 @@
   box-sizing: border-box;
 }
 
-.dragable-image__container {
+.draggable-image__container {
   position: fixed;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.5);
@@ -17,11 +18,29 @@
   justify-content: center;
 }
 
-.dragable-image__container:focus {
+.draggable-image__container:focus {
   outline: none;
 }
 
-.draggable-image.react-draggable-dragging,
-.dragable-image__container.react-draggable-dragging {
+.draggable-image__container:active {
   cursor: grabbing;
+}
+
+.draggable-image__resize-handler {
+  user-select: none;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  box-sizing: border-box;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2IDYiIHN0eWxlPSJiYWNrZ3JvdW5kLWNvbG9yOiNmZmZmZmYwMCIgeD0iMHB4IiB5PSIwcHgiIHdpZHRoPSI2cHgiIGhlaWdodD0iNnB4Ij48ZyBvcGFjaXR5PSIwLjMwMiI+PHBhdGggZD0iTSA2IDYgTCAwIDYgTCAwIDQuMiBMIDQgNC4yIEwgNC4yIDQuMiBMIDQuMiAwIEwgNiAwIEwgNiA2IEwgNiA2IFoiIGZpbGw9IiMwMDAwMDAiLz48L2c+PC9zdmc+");
+  background-position: bottom right;
+  padding: 0 3px 3px 0;
+}
+
+.draggable-image__resize-handler.se {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
 }
