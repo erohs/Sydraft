@@ -1,8 +1,14 @@
 .free-dropper {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
+  background-size: 200px 200px;
+  background-image: linear-gradient(to right, #2c2b31 3px, transparent 3px),
+    linear-gradient(to bottom, #2c2b31 3px, transparent 3px);
+  border: solid 2px red;
 }
 
 .free-dropper.dragover {
-  background: rgba(0, 0, 0, 0.5);
+  background-image: linear-gradient(to right, #4f4f52 3px, transparent 3px),
+    linear-gradient(to bottom, #4f4f52 3px, transparent 3px);
 }
